@@ -1,4 +1,4 @@
-# Code Change Impact Analyzer
+# Code Chat Agent
 
 A CLI tool that uses AutoGen to analyze the impact of code changes across a Python project. This tool helps developers understand the potential risks and effects of proposed changes before implementing them.
 
@@ -9,20 +9,20 @@ A CLI tool that uses AutoGen to analyze the impact of code changes across a Pyth
 - Provides detailed impact analysis using GPT-4
 - Suggests modifications to maintain system stability
 - CLI interface for easy integration into workflows
+- Interactive mode for continuous analysis
 
 ## Installation
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd code-change-analyzer
+git clone [<repository-url>](https://github.com/bhargavkumar1612/codechatagent.git)
+cd codechatagent
 ```
 
 2. Install dependencies:
 ```bash
-pip install -U "autogen-agentchat" "autogen-ext[openai]" python-dotenv
+pip install -r requirements.txt
 ```
-
 
 3. Set up your environment variables:
 Create a `.env` file with your OpenAI API key:
@@ -30,38 +30,54 @@ Create a `.env` file with your OpenAI API key:
 OPENAI_API_KEY=<your-openai-api-key>
 ```
 
-
 ## Usage
 
-1. Prepare your changes in a JSON file (e.g., `changes.json`):
+Run the analyzer in interactive mode:
 ```bash
-python chatagent_openai.py --dir ./proj --changes ./proj/changes.json --output ./proj/analysis_result.json
+python chatagent_openai.py --dir ./proj
 ```
-
 
 ### Command Line Arguments
 
 - `--dir`: Directory containing the Python files to analyze (required)
-- `--changes`: Path to JSON file containing proposed changes (required)
-- `--output`: Path to save analysis results (optional)
+
+The tool will continuously listen for your inputs and provide analysis and suggestions based on your proposed changes.
 
 ### Example
 
 ```bash
-python chatagent_openai.py --dir ./proj --changes ./proj/changes.json --output ./proj/analysis_result.json
+python chatagent_openai.py --dir ./proj
 ```
+
 ## Output
 
-The tool provides:
-1. Impact Analysis
-   - Potential risks of the changes
-   - Detailed analysis of code modifications
-   - Suggestions for maintaining functionality
+The tool provides analysis in a structured markdown format:
 
-2. Affected Files
-   - List of directly modified files
-   - Files potentially impacted by the changes
-   - Dependency relationships
+1. For each proposed change:
+   - **Changes Required**: Detailed code changes with file paths
+   - **Impact Analysis**: Assessment of how the changes affect the system
+   - **Potential Risks**: Identification of possible issues or vulnerabilities
+   - **Suggested Modifications**: Recommendations for improving the implementation
+
+Example output format:
+```markdown
+### 1. [Description of Change]
+
+### Changes_required
+#### [filename]
+```python
+[code changes]
+```
+
+### Impact_analysis
+[Detailed analysis of the change's impact]
+
+### Potential_risks
+[List of potential risks]
+
+### Suggested_modifications
+[Recommendations for implementation]
+```
 
 ## Limitations
 

@@ -8,9 +8,6 @@ import sys
 from pathlib import Path
 import asyncio
 from datetime import datetime
-
-from autogen_agentchat.agents import AssistantAgent
-from autogen_ext.models.openai import OpenAIChatCompletionClient
 from typing import Dict, List
 
 
@@ -58,21 +55,28 @@ class FileSystemAnalyzer:
 
 
 class AIAnalyzer:
-    def __init__(self):
-        self.agent = AssistantAgent(
-            "code_analyzer", OpenAIChatCompletionClient(model="gpt-4")
-        )
+    def __init__(self, agent_type: str = "openai"):
+        """Initialize the AI analyzer with the specified agent type"""
+        if agent_type == "openai":
+            from openai_analyser import OpenAIAnalyzer
+
+            self.agent = OpenAIAnalyzer()
+        elif agent_type == "claude":
+            from claude_analyser import ClaudeAnalyzer
+
+            self.agent = ClaudeAnalyzer()
+        elif agent_type == "deepseek":
+            from deepseek_analyser import DeepSeekAnalyzer
+
+            self.agent = DeepSeekAnalyzer()
+        else:
+            raise ValueError(f"Unsupported agent type: {agent_type}")
 
     async def analyze_file_changes(
         self, file_system: Dict[str, str], changes: Dict[str, str]
     ) -> Dict:
         analysis_prompt = self._build_analysis_prompt(file_system, changes)
-        analysis_result = await self.agent.run(task=analysis_prompt)
-
-        # with open("analysis_result.py", "w") as f:
-        #     f.write(str(analysis_result))
-
-        return analysis_result.messages[1].content
+        return await self.agent.analyze(analysis_prompt)
 
     def _build_analysis_prompt(
         self, file_system: Dict[str, str], changes: Dict[str, str]
@@ -115,7 +119,7 @@ class ResultFormatter:
             return json.loads(analysis_str)
         except Exception as e:
             print(f"Error parsing result to JSON: {e}")
-            return analysis_str
+            return analysis_str  # type: ignore
 
     @staticmethod
     def format_output_to_md(analysis_json: Dict) -> str:
@@ -137,22 +141,23 @@ class ResultFormatter:
             return result
         except Exception as e:
             print(f"Error formatting output: {e}, output: {analysis_json}")
-            return analysis_json
+            return analysis_json  # type: ignore
 
 
 class ChatAgent:
-    def __init__(self, base_path: Path):
+    def __init__(self, base_path: Path, agent_type: str = "openai"):
         self.file_system_analyzer = FileSystemAnalyzer(base_path)
-        self.ai_analyzer = AIAnalyzer()
+        self.agent_type = agent_type
+        self.ai_analyzer = AIAnalyzer(agent_type)
         self.result_formatter = ResultFormatter()
-        self.result_file = (
-            f"results/result_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.md"
-        )
+        self.result_file = f"results/{self.agent_type}/result_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.md"
 
     async def run_interactive_session(self):
+        self._create_result_dir()
         print("Enter your questions/changes (type 'exit' to quit):")
 
         with open(self.result_file, "w") as f:
+            print(f"# Agent: {self.agent_type}\n")
             question_count = 1
             while True:
                 file_system = self.file_system_analyzer.get_file_system_dict()
@@ -172,7 +177,7 @@ class ChatAgent:
                 result = await self.ai_analyzer.analyze_file_changes(
                     file_system, changes
                 )
-                result = self.result_formatter.parse_result_to_json(result)
+                result = self.result_formatter.parse_result_to_json(result)  # type: ignore
                 result = self.result_formatter.format_output_to_md(result)
 
                 # Write response
@@ -180,6 +185,9 @@ class ChatAgent:
                 f.flush()
 
                 print("Response has been written to", self.result_file)
+
+    def _create_result_dir(self):
+        Path(f"results/{self.agent_type}").mkdir(parents=True, exist_ok=True)
 
 
 async def main():
@@ -192,9 +200,16 @@ async def main():
         required=True,
         help="Directory containing the files to analyze",
     )
+    parser.add_argument(
+        "--agent",
+        type=str,
+        default="openai",
+        choices=["openai", "claude", "deepseek"],
+        help="AI agent to use for analysis",
+    )
     args = parser.parse_args()
 
-    chat_agent = ChatAgent(Path(args.dir))
+    chat_agent = ChatAgent(Path(args.dir), args.agent)
     await chat_agent.run_interactive_session()
 
 

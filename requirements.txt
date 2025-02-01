@@ -2,4 +2,8 @@ python-dotenv
 autogen
 anthropic
 requests
-
+composio-core
+composio-openai
+langchain
+langchain-openai
+composio-langchain

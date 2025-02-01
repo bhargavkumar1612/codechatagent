@@ -1,10 +1,13 @@
 # in progress
+from dotenv import load_dotenv
 import os
 import requests
 from typing import Dict
 
+load_dotenv()
+
 # Replace with your DeepSeek API key and endpoint
-DEEPSEEK_API_KEY = "your_deepseek_api_key_here"
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"  # Example endpoint
 
 def read_code_files(directory):

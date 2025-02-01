@@ -46,8 +46,10 @@ The tool will continuously listen for your inputs and provide analysis and sugge
 ### Example
 
 ```bash
-python chatagent_openai.py --dir ./proj
+python chatagent.py --dir <directory_path> --agent <agent_type>
 ```
+note: agent_type can be openai, claude, deepseek
+currently only openai is tested
 
 ## Output
 

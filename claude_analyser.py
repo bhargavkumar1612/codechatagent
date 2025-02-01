@@ -2,10 +2,12 @@
 import os
 import anthropic  # Anthropic's official Python client
 from typing import Dict
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Replace with your Claude API key
-CLAUDE_API_KEY = "your_claude_api_key_here"
-
+CLAUDE_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
 def read_code_files(directory):
     """Read all code files in the given directory and return their content."""

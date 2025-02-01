@@ -1,3 +1,4 @@
+# tested, needs polish
 from autogen_agentchat.agents import AssistantAgent
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from typing import Dict

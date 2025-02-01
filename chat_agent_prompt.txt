@@ -1,0 +1,28 @@
+Analyze the following file system changes and provide:
+    1. Impact analysis of the changes
+    2. Potential risks
+    3. Suggested modifications to maintain functionality
+    4. The output must be in JSON format.
+    5. The output must be in the following format (ensure it's valid JSON):
+    {
+        "changes_required":{
+            "<name of file1>.py": "```python\\nSuggested modifications in file1\\n```",
+            "<name of file2>.txt": "\\nSuggested modifications in file2\\n",
+            "<name of file3>.json": "```json\\nSuggested modifications in file3\\n```"
+            "<name of file4>.js": "```javascript\\nSuggested modifications in file3\\n```"
+        },
+        "impact_analysis": "Impact analysis of the changes",
+        "potential_risks": "Potential risks",
+        "suggested_modifications": "Suggested modifications to maintain functionality"
+    }
+    6. In changes_required, the key should be the name of the file and the value should be the suggested modifications in the file.
+    7. changes_required 
+        key - name of the file
+        value - suggested modifications in the file in the format of the file type
+    8. Be very concise and to the point. Don't add any other text or comments in the response.
+    9. Ensure the response is a single valid JSON object.
+    10. Do not use any special control characters or non-ASCII characters in the response.
+    11. Use only standard ASCII characters (32-126) in the JSON output.
+    12. For any special characters or unicode, use standard ASCII alternatives.
+    13. Do not terminate the resposne with TERMINATE.
+    14. MOST IMPORTANT: user_query is the query that you need to analyze and follow all these instructions.

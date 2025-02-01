@@ -125,8 +125,12 @@ class ResultFormatter:
                 result += f"### {key.capitalize()}\n"
                 if key == "changes_required":
                     for file_path, code_block in analysis_json[key].items():
-                        result += f"### {file_path}\n"
+                        result += f"#### {file_path}\n"
                         if code_block:
+                            # Clean up the code block by removing escaped newlines
+                            code_block = code_block.replace("\\n", "\n")
+                            # Remove any trailing/leading whitespace
+                            code_block = code_block.strip()
                             result += f"{code_block}\n\n"
                 else:
                     result += f"{analysis_json[key]}\n\n"

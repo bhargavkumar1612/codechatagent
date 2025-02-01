@@ -1,6 +1,6 @@
-@app.route("/fibonacci", methods=["GET"])
-def fibonacci_num():
-    seq = [0, 1]
-    for i in range(8):
-        seq.append(seq[-1] + seq[-2])
-    return jsonify(sequence=seq)
+from flask import Flask, request
+app = Flask(__name__)
+@app.route('/hello', methods=['GET'])
+def hello():
+    return 'Hello World'
+

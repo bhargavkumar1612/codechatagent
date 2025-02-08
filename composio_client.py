@@ -83,28 +83,39 @@ class GithubContentFetcher:
         download_link = self._parse_download_link(result["output"])
         return self._download_file(download_link)
 
-    def get_recent_commits_with_content(self, limit: int = 5) -> List[dict]:
+    def get_recent_commits_with_content(self, limit: int = 5) -> str:
         """
-        Fetch the last N commits and their contents from the Github repository
+        Fetch the last N commits and their file changes from the Github repository
 
         Args:
             limit (int): Number of recent commits to fetch (default: 5)
 
         Returns:
-            List[dict]: List of dictionaries containing commit info and content changes
+            str: String containing only the file changes and content from each commit
         """
         # Get list of recent commits
         commits_prompt = f"list the last {limit} commits from the repository {self.config.repo_url} in the {self.config.branch} branch"
         commits_result = self.agent_executor.invoke({"input": commits_prompt})
-        commits_data = []
-        # For each commit, get the detailed commit information
+        
+        changes_history = []
+        # For each commit, get the detailed changes
         for commit_sha in commits_result["output"].split("\n")[:limit]:
             if not commit_sha.strip():
                 continue
-            commit_prompt = f"get the detailed information for commit {commit_sha} from repository {self.config.repo_url}"
-            commit_result = self.agent_executor.invoke({"input": commit_prompt})
-            commits_data.append({"sha": commit_sha, "details": commit_result["output"]})
-        return commits_data
+                
+            # Get specific file changes for this commit
+            changes_prompt = f"show me the exact file changes and content for commit {commit_sha} from repository {self.config.repo_url}"
+            changes_result = self.agent_executor.invoke({"input": changes_prompt})
+            
+            # Extract only the file changes content
+            if changes_result and "output" in changes_result:
+                changes = changes_result["output"]
+                if isinstance(changes, dict) and "data" in changes:
+                    changes = changes["data"].get("changes", "")
+                changes_history.append(f"Changes in commit {commit_sha[:8]}:\n{changes}\n")
+        
+        # Join all changes with a separator
+        return "\n---\n".join(changes_history)
 
 
 def main():
@@ -124,9 +135,7 @@ def main():
         # Get recent commits
         print("\nRecent commits:")
         commits = fetcher.get_recent_commits_with_content()
-        for commit in commits:
-            print(f"\nCommit: {commit['sha']}")
-            print(f"Details: {commit['details']}")
+        print(commits)
 
     except Exception as e:
         print(f"Error: {str(e)}")

@@ -36,11 +36,13 @@ You are a code analysis assistant. Please analyze the provided code and git chan
 
 Please ensure your response:
 1. Maintains consistent JSON structure
-2. Provides specific, actionable insights
-3. Considers both immediate and downstream effects
-4. Includes code examples where relevant
-5. References relevant git history when applicable
-6. MOST IMPORTANT: user_query is the query that you need to analyze and follow all these instructions.
+2. Strictly follow the JSON format, dont add any other text or comments, if you want to add any comments, relavent field in the JSON.
+3. Provides specific, actionable insights
+4. Considers both immediate and downstream effects
+5. Includes code examples where relevant
+6. References relevant git history when applicable
+7. MOST IMPORTANT: user_query is the query that you need to analyze and follow all these instructions.
+
 
 Context:
 {git_diff}

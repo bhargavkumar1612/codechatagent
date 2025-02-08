@@ -31,28 +31,46 @@ class FileHandler:
             sys.exit(1)
 
     @staticmethod
-    def get_git_diff() -> str:
+    def get_git_diff(working_dir: str) -> str:
         """Get the git diff of unstaged changes"""
         try:
             import subprocess
+            import os
+
+            # Store current directory
+            original_dir = os.getcwd()
+            # Change to working directory
+            os.chdir(working_dir)
 
             result = subprocess.run(["git", "diff"], capture_output=True, text=True)
+
+            # Change back to original directory
+            os.chdir(original_dir)
             return result.stdout
         except Exception as e:
             print(f"Error getting git diff: {e}")
             return ""
 
     @staticmethod
-    def get_git_history(num_commits: int = 5) -> str:
+    def get_git_history(working_dir: str, num_commits: int = 5) -> str:
         """Get the last n commit messages and their changes"""
         try:
             import subprocess
+            import os
+
+            # Store current directory
+            original_dir = os.getcwd()
+            # Change to working directory
+            os.chdir(working_dir)
 
             result = subprocess.run(
                 ["git", "log", f"-{num_commits}", "--patch"],
                 capture_output=True,
                 text=True,
             )
+
+            # Change back to original directory
+            os.chdir(original_dir)
             return result.stdout
         except Exception as e:
             print(f"Error getting git history: {e}")
@@ -85,6 +103,7 @@ class FileSystemAnalyzer:
 class AIAnalyzer:
     def __init__(self, agent_type: str = "openai"):
         """Initialize the AI analyzer with the specified agent type"""
+        self.base_path = None  # Will be set later
         if agent_type == "openai":
             from openai_analyser import OpenAIAnalyzer
 
@@ -101,18 +120,20 @@ class AIAnalyzer:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 
     async def analyze_file_changes(
-        self, file_system: Dict[str, str], changes: Dict[str, str]
+        self, file_system: Dict[str, str], user_query: str
     ) -> Dict:
-        analysis_prompt = self._build_analysis_prompt(file_system, changes)
+        analysis_prompt = self._build_analysis_prompt(
+            file_system, user_query, self.base_path
+        )
         return await self.agent.analyze(analysis_prompt)
 
     def _build_analysis_prompt(
-        self, file_system: Dict[str, str], changes: Dict[str, str]
+        self, file_system: Dict[str, str], user_query: str, base_path: str
     ) -> str:
         prompt = FileHandler.read_file_content("chat_agent_prompt.txt")
 
         # Add git information to the prompt
-        git_diff = FileHandler.get_git_diff()
+        git_diff = FileHandler.get_git_diff(base_path)
         if git_diff:
             prompt = prompt.replace("{git_diff}", f"\nUnstaged Changes:\n{git_diff}\n")
         # git_history = FileHandler.get_git_history()
@@ -123,15 +144,8 @@ class AIAnalyzer:
         file_system_str = ""
         for path, content in file_system.items():
             file_system_str += f"\n{path}:\n{content}\n"
-
-        changes_str = ""
-        for path, change in changes.items():
-            changes_str += f"\n{path}:\n{change}\n"
-
         prompt = prompt.replace("{file_system}", file_system_str)
-        prompt = prompt.replace("{changes}", changes_str)
-
-
+        prompt = prompt.replace("{user_query}", user_query)
         return prompt
 
 
@@ -235,24 +249,20 @@ class ChatAgent:
 
                 if user_input.lower() == "exit":
                     break
-
-                changes = {"user_query": user_input}
-
                 # Write question and get response
                 f.write(f"\n### {question_count}. {user_input}\n")
                 f.flush()
-
                 # Save prompt to debug folder
-                prompt = self.ai_analyzer._build_analysis_prompt(file_system, changes)
+                prompt = self.ai_analyzer._build_analysis_prompt(
+                    file_system, user_input, str(self.file_system_analyzer.base_path)
+                )
                 debug_prompt_file = self.debug_dir / f"prompt_{question_count}.txt"
                 with open(debug_prompt_file, "w") as debug_f:
                     debug_f.write(prompt)
-
                 # Analyze and get raw response
                 raw_result = await self.ai_analyzer.analyze_file_changes(
-                    file_system, changes
+                    file_system, user_input
                 )
-
                 # Save raw response to debug folder
                 debug_response_file = self.debug_dir / f"response_{question_count}.txt"
                 with open(debug_response_file, "w") as debug_f:

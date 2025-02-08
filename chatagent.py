@@ -30,6 +30,34 @@ class FileHandler:
             print(f"Error parsing changes file: {e}")
             sys.exit(1)
 
+    @staticmethod
+    def get_git_diff() -> str:
+        """Get the git diff of unstaged changes"""
+        try:
+            import subprocess
+
+            result = subprocess.run(["git", "diff"], capture_output=True, text=True)
+            return result.stdout
+        except Exception as e:
+            print(f"Error getting git diff: {e}")
+            return ""
+
+    @staticmethod
+    def get_git_history(num_commits: int = 5) -> str:
+        """Get the last n commit messages and their changes"""
+        try:
+            import subprocess
+
+            result = subprocess.run(
+                ["git", "log", f"-{num_commits}", "--patch"],
+                capture_output=True,
+                text=True,
+            )
+            return result.stdout
+        except Exception as e:
+            print(f"Error getting git history: {e}")
+            return ""
+
 
 class FileSystemAnalyzer:
     def __init__(self, base_path: Path):
@@ -83,11 +111,26 @@ class AIAnalyzer:
     ) -> str:
         prompt = FileHandler.read_file_content("chat_agent_prompt.txt")
 
+        # Add git information to the prompt
+        git_diff = FileHandler.get_git_diff()
+        if git_diff:
+            prompt = prompt.replace("{git_diff}", f"\nUnstaged Changes:\n{git_diff}\n")
+        # git_history = FileHandler.get_git_history()
+        # if git_history:
+        #     prompt = prompt.replace(
+        #         "{git_history}", f"\nRecent Commit History:\n{git_history}\n"
+        #     )
+        file_system_str = ""
         for path, content in file_system.items():
-            prompt += f"\n{path}:\n{content}\n"
+            file_system_str += f"\n{path}:\n{content}\n"
 
+        changes_str = ""
         for path, change in changes.items():
-            prompt += f"\n{path}:\n{change}\n"
+            changes_str += f"\n{path}:\n{change}\n"
+
+        prompt = prompt.replace("{file_system}", file_system_str)
+        prompt = prompt.replace("{changes}", changes_str)
+
 
         return prompt
 
@@ -125,23 +168,46 @@ class ResultFormatter:
     def format_output_to_md(analysis_json: Dict) -> str:
         try:
             result = ""
+            # Add timestamp for each analysis
+            result += (
+                f"*Analysis Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n\n"
+            )
+
             for key in analysis_json.keys():
                 result += f"### {key.capitalize()}\n"
                 if key == "changes_required":
                     for file_path, code_block in analysis_json[key].items():
                         result += f"#### {file_path}\n"
                         if code_block:
-                            # Clean up the code block by removing escaped newlines
-                            code_block = code_block.replace("\\n", "\n")
-                            # Remove any trailing/leading whitespace
-                            code_block = code_block.strip()
-                            result += f"{code_block}\n\n"
+                            code_block = code_block.replace("\\n", "\n").strip()
+                            # Add language identifier for better markdown rendering
+                            ext = file_path.split(".")[-1]
+                            result += f"```{ext}\n{code_block}\n```\n\n"
+                elif key == "impact_analysis":
+                    # Format impact analysis as a bulleted list
+                    impacts = analysis_json[key]
+                    if isinstance(impacts, list):
+                        for impact in impacts:
+                            result += f"- {impact}\n"
+                    else:
+                        result += f"{impacts}\n"
+                    result += "\n"
+                elif key == "dependencies":
+                    # Format dependencies as a table
+                    deps = analysis_json[key]
+                    if isinstance(deps, dict):
+                        result += "| Module | Dependency Type |\n|---------|----------------|\n"
+                        for module, dep_type in deps.items():
+                            result += f"| {module} | {dep_type} |\n"
+                    else:
+                        result += f"{deps}\n"
+                    result += "\n"
                 else:
                     result += f"{analysis_json[key]}\n\n"
             return result
         except Exception as e:
             print(f"Error formatting output: {e}, output: {analysis_json}")
-            return analysis_json  # type: ignore
+            return str(analysis_json)
 
 
 class ChatAgent:
@@ -150,7 +216,11 @@ class ChatAgent:
         self.agent_type = agent_type
         self.ai_analyzer = AIAnalyzer(agent_type)
         self.result_formatter = ResultFormatter()
-        self.result_file = f"results/{self.agent_type}/result_{datetime.now().strftime('%Y_%m_%d_%H_%M_%S')}.md"
+        # Create timestamp once for consistent folder naming
+        self.timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+        self.result_dir = Path(f"results/{self.agent_type}/{self.timestamp}")
+        self.debug_dir = self.result_dir / "debug"
+        self.result_file = self.result_dir / "result.md"
 
     async def run_interactive_session(self):
         self._create_result_dir()
@@ -171,23 +241,37 @@ class ChatAgent:
                 # Write question and get response
                 f.write(f"\n### {question_count}. {user_input}\n")
                 f.flush()
-                question_count += 1
 
-                # Analyze and format response
-                result = await self.ai_analyzer.analyze_file_changes(
+                # Save prompt to debug folder
+                prompt = self.ai_analyzer._build_analysis_prompt(file_system, changes)
+                debug_prompt_file = self.debug_dir / f"prompt_{question_count}.txt"
+                with open(debug_prompt_file, "w") as debug_f:
+                    debug_f.write(prompt)
+
+                # Analyze and get raw response
+                raw_result = await self.ai_analyzer.analyze_file_changes(
                     file_system, changes
                 )
-                result = self.result_formatter.parse_result_to_json(result)  # type: ignore
+
+                # Save raw response to debug folder
+                debug_response_file = self.debug_dir / f"response_{question_count}.txt"
+                with open(debug_response_file, "w") as debug_f:
+                    debug_f.write(raw_result)
+
+                # Parse and format response
+                result = self.result_formatter.parse_result_to_json(raw_result)
                 result = self.result_formatter.format_output_to_md(result)
 
-                # Write response
+                # Write formatted response
                 f.write(f"\n{result}\n")
                 f.flush()
 
+                question_count += 1
                 print("Response has been written to", self.result_file)
 
     def _create_result_dir(self):
-        Path(f"results/{self.agent_type}").mkdir(parents=True, exist_ok=True)
+        self.result_dir.mkdir(parents=True, exist_ok=True)
+        self.debug_dir.mkdir(parents=True, exist_ok=True)
 
 
 async def main():

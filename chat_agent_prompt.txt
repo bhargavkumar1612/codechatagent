@@ -45,8 +45,12 @@ Please ensure your response:
 
 
 Context:
-{git_diff}
+File System:
 {file_system}
+
+Git Diff:
+{git_diff}
+
 
 User Query:
 {user_query}

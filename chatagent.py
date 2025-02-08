@@ -119,13 +119,8 @@ class AIAnalyzer:
         else:
             raise ValueError(f"Unsupported agent type: {agent_type}")
 
-    async def analyze_file_changes(
-        self, file_system: Dict[str, str], user_query: str
-    ) -> Dict:
-        analysis_prompt = self._build_analysis_prompt(
-            file_system, user_query, self.base_path
-        )
-        return await self.agent.analyze(analysis_prompt)
+    async def analyze_file_changes(self, prompt: str) -> Dict:
+        return await self.agent.analyze(prompt)
 
     def _build_analysis_prompt(
         self, file_system: Dict[str, str], user_query: str, base_path: str
@@ -143,7 +138,7 @@ class AIAnalyzer:
         #     )
         file_system_str = ""
         for path, content in file_system.items():
-            file_system_str += f"\n{path}:\n{content}\n"
+            file_system_str += f"\n**{path}**:\n{content}\n"
         prompt = prompt.replace("{file_system}", file_system_str)
         prompt = prompt.replace("{user_query}", user_query)
         return prompt
@@ -260,9 +255,7 @@ class ChatAgent:
                 with open(debug_prompt_file, "w") as debug_f:
                     debug_f.write(prompt)
                 # Analyze and get raw response
-                raw_result = await self.ai_analyzer.analyze_file_changes(
-                    file_system, user_input
-                )
+                raw_result = await self.ai_analyzer.analyze_file_changes(prompt)
                 # Save raw response to debug folder
                 debug_response_file = self.debug_dir / f"response_{question_count}.txt"
                 with open(debug_response_file, "w") as debug_f:

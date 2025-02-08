@@ -1,49 +1,44 @@
-Analyze the following file system changes and provide:
-    1. Impact analysis of the changes
-    2. Potential risks
-    3. Suggested modifications to maintain functionality
-    4. The output MUST be in the following format and MUST be valid JSON:
-        {{
-            "changes_required":{
-                "<name of file1>.py": "```py\\nSuggested modifications in file1\\n```",
+Analyze the provided file system changes and user query. Follow these instructions precisely:
 
-                "<name of file2>.txt": "\\nSuggested modifications in file2\\n",
-                "<name of file3>.json": "```json\\nSuggested modifications in file3\\n```"
-                "<name of file4>.js": "```js\\nSuggested modifications in file3\\n```"
-            },
+1. **Impact Analysis**: Explain the overall impact of the changes on the system.
+2. **Potential Risks**: Identify any risks introduced by the changes.
+3. **Suggested Modifications**: Provide specific modifications to maintain or improve functionality.
+4. **Output Format**: The output MUST be a single valid JSON object in the following format:
+    ```json
+    {
+        "changes_required": {
+            "<name of file1>.py": "\nSuggested modifications in file1 in python format\n",
+            "<name of file2>.txt": "\nSuggested modifications in file2 in text format\n",
+            "<name of file3>.json": "\nSuggested modifications in file3 in json format\n",
+            "<name of file4>.js": "\nSuggested modifications in file4 in javascript format\n"
+        },
+        "impact_analysis": "Impact analysis of the changes",
+        "potential_risks": "Potential risks",
+        "suggested_modifications": "Suggested modifications to maintain functionality"
+    }
+    ```
+5. **Changes Required**:
+    - The key MUST be the name of the file.
+    - The value MUST be the suggested modifications in the file, formatted according to the file type.
+    - Use single quotes for strings in the value. Do NOT use double quotes.
+6. **Conciseness**: Be concise and to the point. Do not add any extra text, comments, or explanations outside the JSON object.
+7. **ASCII Compliance**: Use only standard ASCII characters (32-126). Replace any special or non-ASCII characters with ASCII alternatives.
+8. **Restore Deleted Files**:
+    - If the user query requests to restore deleted files:
+        - Check the git diff for deleted file contents.
+        - Include the exact content of the deleted file in `changes_required`.
+        - Only restore files shown as deleted in the git diff.
+        - Do not include generic text in `changes_required`; only include the exact content of the deleted file.
+9. **No Termination**: Do not terminate the response with "TERMINATE" or any other marker.
+10. **Follow User Query**: Analyze and respond strictly based on the user query and provided context.
 
-            "impact_analysis": "Impact analysis of the changes",
-            "potential_risks": "Potential risks",
-            "suggested_modifications": "Suggested modifications to maintain functionality"
-        }}
-    5. In changes_required, the key MUST be the name of the file and the value should be the suggested modifications in the file.
-    6. changes_required 
-        key - name of the file
-        value - suggested modifications in the file in the format of the file type
+---
 
-        Must not add double quotes in the value only use single quotes
-    7. Be very concise and to the point. Don't add any other text or comments in the response.
-    8. Ensure the response is a single valid JSON object.
-    9. Must not use any special control characters or non-ASCII characters in the response.
-    10. Use only standard ASCII characters (32-126) in the JSON output.
-    11. For any special characters or unicode, use standard ASCII alternatives.
-    12. Must not terminate the resposne with TERMINATE.
-    13. If the user requests to restore deleted files:
-       - Check the git diff for deleted file contents
-       - Include the complete file contents in changes_required
+**Context**:
+- File System: {file_system}
+- Git Diff: {git_diff}
+- User Query: {user_query}
 
-       - Only restore files that are shown as deleted in the git diff
-    15. MOST IMPORTANT: user_query is the query that you need to analyze and follow all these instructions.
+---
 
-
-
-Context:
-File System:
-{file_system}
-
-Git Diff:
-{git_diff}
-
-
-User Query:
-{user_query}
+**Output**: A single valid JSON object adhering to the above instructions.

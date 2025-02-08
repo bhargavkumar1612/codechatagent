@@ -5,6 +5,9 @@ from langchain.agents import create_openai_functions_agent, AgentExecutor
 from langchain import hub
 from langchain_openai import ChatOpenAI
 from composio_langchain import ComposioToolSet, Action
+import os
+
+REPO_URL = os.getenv("REPO_URL")
 
 
 @dataclass
@@ -13,7 +16,8 @@ class GithubConfig:
 
     repo_url: str
     branch: str = "main"
-    composio_api_key: str = "2f42uzwidjcexylvf9h9hd"
+    composio_api_key: str = os.getenv("COMPOSIO_API_KEY")
+
 
 
 class GithubContentFetcher:
@@ -76,7 +80,8 @@ class GithubContentFetcher:
 
 def main():
     # Configuration
-    config = GithubConfig(repo_url="https://github.com/bhargavkumar1612/test.git")
+    config = GithubConfig(repo_url=REPO_URL)
+
 
     # Initialize fetcher
     fetcher = GithubContentFetcher(config)

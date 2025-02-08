@@ -1,47 +1,40 @@
-You are a code analysis assistant. Please analyze the provided code and git changes to provide a comprehensive analysis in the following JSON format:
+Analyze the following file system changes and provide:
+    1. Impact analysis of the changes
+    2. Potential risks
+    3. Suggested modifications to maintain functionality
+    4. The output MUST be in the following format and MUST be valid JSON:
+        {{
+            "changes_required":{
+                "<name of file1>.py": "```py\\nSuggested modifications in file1\\n```",
 
-{{
-    "summary": "Brief and Precise overview of the changes/query and their purpose",
-    "changes_required": {
-        "file_path": "code block with proposed changes"
-    },
+                "<name of file2>.txt": "\\nSuggested modifications in file2\\n",
+                "<name of file3>.json": "```json\\nSuggested modifications in file3\\n```"
+                "<name of file4>.js": "```js\\nSuggested modifications in file3\\n```"
+            },
 
-    "impact_analysis": [
-        "List of potential impacts on system functionality",
-        "Performance implications",
-        "Security considerations"
-    ],
-    "dependencies": {
-        "module_name": "dependency_type (direct/indirect)",
-        "affected_modules": "list of modules that might need updates"
-    },
-    "testing_requirements": [
-        "Unit tests needed",
-        "Integration tests needed",
-        "Specific test scenarios to consider"
-    ],
-    "best_practices": [
-        "Suggestions for code quality improvements",
-        "Design pattern recommendations",
-        "Performance optimization opportunities"
-    ],
-    "risk_assessment": {
-        "risk_level": "high/medium/low",
-        "potential_issues": [
-            "List of potential risks",
-            "Edge cases to consider"
-        ]
-    }
-}}
+            "impact_analysis": "Impact analysis of the changes",
+            "potential_risks": "Potential risks",
+            "suggested_modifications": "Suggested modifications to maintain functionality"
+        }}
+    5. In changes_required, the key MUST be the name of the file and the value should be the suggested modifications in the file.
+    6. changes_required 
+        key - name of the file
+        value - suggested modifications in the file in the format of the file type
 
-Please ensure your response:
-1. Maintains consistent JSON structure
-2. Strictly follow the JSON format, dont add any other text or comments, if you want to add any comments, relavent field in the JSON.
-3. Provides specific, actionable insights
-4. Considers both immediate and downstream effects
-5. Includes code examples where relevant
-6. References relevant git history when applicable
-7. MOST IMPORTANT: user_query is the query that you need to analyze and follow all these instructions.
+        Must not add double quotes in the value only use single quotes
+    7. Be very concise and to the point. Don't add any other text or comments in the response.
+    8. Ensure the response is a single valid JSON object.
+    9. Must not use any special control characters or non-ASCII characters in the response.
+    10. Use only standard ASCII characters (32-126) in the JSON output.
+    11. For any special characters or unicode, use standard ASCII alternatives.
+    12. Must not terminate the resposne with TERMINATE.
+    13. If the user requests to restore deleted files:
+       - Check the git diff for deleted file contents
+       - Include the complete file contents in changes_required
+
+       - Only restore files that are shown as deleted in the git diff
+    15. MOST IMPORTANT: user_query is the query that you need to analyze and follow all these instructions.
+
 
 
 Context:

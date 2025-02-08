@@ -149,20 +149,22 @@ class ResultFormatter:
     def parse_result_to_json(analysis_str: str) -> Dict:
         analysis_str = analysis_str.strip()
 
+        # If the response contains JSON code block, extract it
+        if "```json" in analysis_str or "```JSON" in analysis_str:
+            # Find the start of JSON block
+            start_idx = analysis_str.find("```json")
+            if start_idx == -1:
+                start_idx = analysis_str.find("```JSON")
+            start_idx = analysis_str.find("\n", start_idx) + 1
+
+            # Find the end of JSON block
+            end_idx = analysis_str.rfind("```", start_idx)
+            if end_idx != -1:
+                analysis_str = analysis_str[start_idx:end_idx].strip()
+
         # Clean up the analysis string
         if "TERMINATE" in analysis_str:
             analysis_str = analysis_str.replace("TERMINATE", "")
-
-        # Remove JSON code block markers
-        for marker in ["```json", "```JSON"]:
-            if analysis_str.startswith(marker):
-                analysis_str = analysis_str.replace(marker, "")
-
-        analysis_str = analysis_str.strip()
-
-        # Remove trailing backticks
-        while analysis_str.endswith("```"):
-            analysis_str = analysis_str[:-3].strip()
 
         # Clean non-printable characters
         analysis_str = "".join(" " if ord(char) < 32 else char for char in analysis_str)
@@ -211,9 +213,18 @@ class ResultFormatter:
                     else:
                         result += f"{deps}\n"
                     result += "\n"
-                else:
+                elif key == "potential_risks":
+                    result += f"### Potential Risks\n"
                     result += f"{analysis_json[key]}\n\n"
+                elif key == "suggested_modifications":
+                    result += f"### Suggested Modifications\n"
+                    result += f"{analysis_json[key]}\n\n"
+                else:
+                    result += f"### {key.capitalize()}\n"
+                    result += f"{analysis_json[key]}\n\n"
+
             return result
+
         except Exception as e:
             print(f"Error formatting output: {e}, output: {analysis_json}")
             return str(analysis_json)

@@ -1,3 +1,6 @@
+import dotenv
+
+dotenv.load_dotenv()
 import requests
 from dataclasses import dataclass
 from typing import List
@@ -19,7 +22,6 @@ class GithubConfig:
     composio_api_key: str = os.getenv("COMPOSIO_API_KEY")
 
 
-
 class GithubContentFetcher:
     def __init__(self, config: GithubConfig):
         self.config = config
@@ -32,7 +34,11 @@ class GithubContentFetcher:
 
         composio_toolset = ComposioToolSet(api_key=self.config.composio_api_key)
         tools = composio_toolset.get_tools(
-            actions=[Action.GITHUB_GET_REPOSITORY_CONTENT]
+            actions=[
+                Action.GITHUB_GET_REPOSITORY_CONTENT,
+                Action.GITHUB_LIST_COMMITS,
+                Action.BITBUCKET_GET_A_COMMIT,
+            ]
         )
 
         agent = create_openai_functions_agent(llm, tools, prompt)
@@ -77,21 +83,53 @@ class GithubContentFetcher:
         download_link = self._parse_download_link(result["output"])
         return self._download_file(download_link)
 
+    def get_recent_commits_with_content(self, limit: int = 5) -> List[dict]:
+        """
+        Fetch the last N commits and their contents from the Github repository
+
+        Args:
+            limit (int): Number of recent commits to fetch (default: 5)
+
+        Returns:
+            List[dict]: List of dictionaries containing commit info and content changes
+        """
+        # Get list of recent commits
+        commits_prompt = f"list the last {limit} commits from the repository {self.config.repo_url} in the {self.config.branch} branch"
+        commits_result = self.agent_executor.invoke({"input": commits_prompt})
+        commits_data = []
+        # For each commit, get the detailed commit information
+        for commit_sha in commits_result["output"].split("\n")[:limit]:
+            if not commit_sha.strip():
+                continue
+            commit_prompt = f"get the detailed information for commit {commit_sha} from repository {self.config.repo_url}"
+            commit_result = self.agent_executor.invoke({"input": commit_prompt})
+            commits_data.append({"sha": commit_sha, "details": commit_result["output"]})
+        return commits_data
+
 
 def main():
     # Configuration
     config = GithubConfig(repo_url=REPO_URL)
-
 
     # Initialize fetcher
     fetcher = GithubContentFetcher(config)
 
     try:
         # Get file content
-        content = fetcher.get_file_content("app.py")
-        print(content)
+        # content = fetcher.get_file_content("chat_agent_prompt.txt")
+        # print("File content:")
+        # print(content)
+
+
+        # Get recent commits
+        print("\nRecent commits:")
+        commits = fetcher.get_recent_commits_with_content()
+        for commit in commits:
+            print(f"\nCommit: {commit['sha']}")
+            print(f"Details: {commit['details']}")
+
     except Exception as e:
-        print(f"Error fetching file content: {str(e)}")
+        print(f"Error: {str(e)}")
 
 
 if __name__ == "__main__":
